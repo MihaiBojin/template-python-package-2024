@@ -1,0 +1,7 @@
+# DEV requirements
+build >= 1.2.1
+pre-commit >=3.7.1
+pytest >=8.2
+twine >= 5.1.0
+wheel >= 0.43
+wheel-inspect >= 1.7.1
