@@ -1,5 +1,4 @@
 SHELL := /bin/bash
-PROJECT_NAME := template_python_package_2024
 
 .PHONY: clean
 clean: clean-venv
@@ -27,18 +26,19 @@ venv:
 install:
 	@echo "Installing all dependencies and editable package..."
 	@scripts/uninstall-package.bash
-	@pip install -e .[cli,dev]
+	@pip install -e ".[cli,dev]"
 
 .PHONY: build
 build:
 	@echo Cleaning up previous builds...
 	@rm -rf dist/
 	@echo "Building..."
-	@pip install '.[dev]'
 	@python -m build
 
 .PHONY: build-inspect
 build-inspect:
+	# Load project name from project manifest
+	@PROJECT_NAME := $(shell python -c "import toml; print(toml.load('pyproject.toml')['project']['name'])")
 	@echo
 	@echo "Inspecting wheel..."
 	@wheel2json dist/$(PROJECT_NAME)-$(shell cat VERSION)-py3-none-any.whl

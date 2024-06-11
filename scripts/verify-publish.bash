@@ -7,7 +7,8 @@ readonly DIR
 VERSION="$(cat "$DIR"/../VERSION)"
 readonly VERSION
 
-PROJECT_NAME="template_python_package_2024"
+# Load project name from project manifest
+PROJECT_NAME="$(python -c "import toml; print(toml.load('pyproject.toml')['project']['name'])")"
 readonly PROJECT_NAME
 
 # Retries a command up to 3 times
@@ -57,9 +58,11 @@ while [[ "$#" -gt 0 ]]; do
     --test)
         echo "Installing requirements-cli from main index, since not all packages are available in test.pypi..."
         pip install -r "$DIR"/../requirements-cli.txt
+        echo "Attempting install: ${PROJECT_NAME}==$VERSION"
         retry pip install --index-url https://test.pypi.org/simple/ "${PROJECT_NAME}==$VERSION"
         ;;
     --prod)
+        echo "Attempting install: ${PROJECT_NAME}==$VERSION"
         retry pip install "${PROJECT_NAME}[cli]==$VERSION"
         ;;
     --*= | -*)

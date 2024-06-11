@@ -21,25 +21,21 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        working-directory: python
         run: |
           make create-venv
           eval "$(make venv)"
           make install
 
       - name: Run tests
-        working-directory: python
         run: |
           eval "$(make venv)"
           pytest tests
 
       - name: Set the correct (tag) version
-        working-directory: python
         run: |
           scripts/detect-and-set-tag-version.bash
 
       - name: Build
-        working-directory: python
         run: |
           eval "$(make venv)"
           make build
@@ -47,7 +43,6 @@ jobs:
       - name: Publish package to test repository
         env:
           TESTPYPI_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
-        working-directory: python
         run: |
           eval "$(make venv)"
           make publish-test
@@ -55,7 +50,6 @@ jobs:
       - name: Publish package
         env:
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        working-directory: python
         run: |
           eval "$(make venv)"
           make publish
@@ -64,6 +58,5 @@ jobs:
         run: sleep 30
 
       - name: Verify package install from PyPI
-        working-directory: python
         run: |
           make publish-verify

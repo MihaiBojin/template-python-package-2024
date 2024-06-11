@@ -1,9 +1,7 @@
 #!/bin/bash
 set -ueo pipefail
 
-echo "Uninstalling locally installed packages..."
-for package_name in $(pip list | grep "$HOME" | cut -f 1 -d ' '); do
-    echo "Uninstalling $package_name..."
-    pip uninstall -y "$package_name"
-done
+PROJECT_NAME=$(python -c "import toml; print(toml.load('pyproject.toml')['project']['name'])")
+echo "Uninstalling $PROJECT_NAME..."
+pip uninstall -y "$PROJECT_NAME"
 echo "Done."
