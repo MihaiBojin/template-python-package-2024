@@ -30,7 +30,6 @@ jobs:
           make install
 
       - name: Run linters
-        -directory: python
         run: |
           eval "$(make venv)"
           pre-commit run --all-files
