@@ -2,14 +2,14 @@
 readonly VENV="venv"
 
 if [ ! -e "pyproject.toml" ]; then
-    echo "Current directory does not appear to be a python package..."
+    echo "Current directory does not appear to be a python package..." >&2
     echo
     exit 1
 fi
 
 if [ -d "$VENV" ]; then
-    echo "Directory already exists: $VENV"
-    echo "Will not recreate it."
+    echo "Directory already exists: $VENV" >&2
+    echo "Will not recreate it." >&2
     echo
     exit 1
 fi

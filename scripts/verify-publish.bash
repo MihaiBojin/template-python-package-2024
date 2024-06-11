@@ -8,7 +8,7 @@ VERSION="$(cat "$DIR"/../VERSION)"
 readonly VERSION
 
 # Load project name from project manifest
-PROJECT_NAME="$(python -c "import toml; print(toml.load('pyproject.toml')['project']['name'])")"
+PROJECT_NAME="$(python -c "import toml; print(toml.load('$DIR/../pyproject.toml')['project']['name'])")"
 readonly PROJECT_NAME
 
 # Retries a command up to 3 times
@@ -24,7 +24,7 @@ retry() {
 
         if [ "$count" -eq "$MAX_ATTEMPTS" ]; then
             echo
-            echo "Failed after $MAX_ATTEMPTS attempts"
+            echo "Failed after $MAX_ATTEMPTS attempts" >&2
             exit 1
         fi
 
@@ -37,7 +37,7 @@ retry() {
 }
 
 if [[ "$#" -eq 0 ]]; then
-    echo "You must specify --test or --prod as arguments"
+    echo "You must specify --test or --prod as arguments" >&2
     echo
     exit 1
 fi
