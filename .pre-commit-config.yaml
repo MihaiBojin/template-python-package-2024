@@ -5,17 +5,20 @@ repos:
     hooks:
       - id: check-added-large-files
         args: ["--maxkb=1024"]
+      # keep-sorted start
       - id: check-ast
       - id: check-docstring-first
       - id: check-yaml
       - id: debug-statements
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      # keep-sorted end
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.4
     hooks:
       - id: ruff
+        args: ["--fix"]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -27,3 +30,8 @@ repos:
     rev: v1.0.0
     hooks:
       - id: check-json5
+
+  - repo: https://github.com/google/keep-sorted
+    rev: v0.4.0
+    hooks:
+      - id: keep-sorted

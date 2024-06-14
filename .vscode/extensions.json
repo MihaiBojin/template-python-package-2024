@@ -1,5 +1,6 @@
 {
     "recommendations": [
+        // keep-sorted start
         "charliermarsh.ruff",
         "davidanson.vscode-markdownlint",
         "dbaeumer.vscode-eslint",
@@ -11,7 +12,8 @@
         "redhat.vscode-yaml",
         "streetsidesoftware.code-spell-checker",
         "tamasfe.even-better-toml",
-        "timonwong.shellcheck"
+        "timonwong.shellcheck",
+        // keep-sorted end
     ],
     "unwantedRecommendations": []
 }

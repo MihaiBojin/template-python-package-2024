@@ -28,6 +28,16 @@ install:
 	@scripts/uninstall-package.bash
 	@pip install -e ".[cli,dev]"
 
+.PHONY: lint
+lint:
+	@echo "Running pre-commit hooks..."
+	@pre-commit run --all-files
+
+.PHONY: test
+test:
+	@echo "Running tests..."
+	@pytest tests
+
 .PHONY: build
 build:
 	@echo Cleaning up previous builds...
@@ -52,16 +62,6 @@ docker-image:
 	@echo
 	@echo "Building Dockerfile..."
 	@scripts/build-docker-image.bash
-
-.PHONY: test
-test:
-	@echo "Running tests..."
-	@pytest tests
-
-.PHONY: pre-commit
-pre-commit:
-	@echo "Running pre-commit hooks..."
-	@pre-commit run --all-files
 
 .PHONY: publish-test
 publish-test: build
