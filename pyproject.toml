@@ -33,11 +33,20 @@ build-backend = "hatchling.build"
 [tool.hatch.build]
 # https://git-scm.com/docs/gitignore#_pattern_format
 exclude = [
-    "Makefile",
+    # keep-sorted start
+    ".devcontainer",
+    ".env",
+    ".github",
+    ".pre-commit-config.yaml",
     ".pypirc",
-    "tests/**",
+    ".vscode",
+    "Dockerfile",
+    "Makefile",
+    "renovate.json",
     "scripts/**",
-    "!scripts/show-stats.bash",
+    "tests/**",
+    # keep-sorted end
+    "!scripts/delete-venv.bash", # must appear after scripts/**
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -58,6 +67,7 @@ path = "./VERSION"
 pattern = "(?P<version>.+)"
 
 [tool.mypy]
+# keep-sorted start
 check_untyped_defs = true
 disallow_untyped_calls = true
 namespace_packages = false
@@ -66,6 +76,7 @@ show_column_numbers = true
 show_error_codes = true
 warn_no_return = false
 warn_unused_ignores = true
+# keep-sorted end
 
 [[tool.mypy.overrides]]
 module = 'pkg_resources.*'
