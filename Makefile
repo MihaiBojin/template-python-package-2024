@@ -22,6 +22,12 @@ create-venv:
 venv:
 	@echo "source venv/bin/activate"
 
+.PHONY: setup
+setup:
+	@echo "Setting up repo for development"
+	@pip install -e ".[dev]"
+	@pre-commit install
+
 .PHONY: install
 install:
 	@echo "Installing all dependencies and editable package..."
