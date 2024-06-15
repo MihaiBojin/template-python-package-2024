@@ -57,11 +57,17 @@ build-inspect:
 	@echo "Inspecting archive..."
 	@tar -tf dist/$(PROJECT_NAME)-$(shell cat VERSION).tar.gz
 
-.PHONY: docker-image
-docker-image:
+.PHONY: docker
+docker:
 	@echo
 	@echo "Building Dockerfile..."
 	@scripts/build-docker-image.bash
+
+.PHONY: docker-run
+docker-run:
+	@echo
+	@echo "Running Docker image..."
+	@scripts/run-docker-image.bash
 
 .PHONY: publish-test
 publish-test: build

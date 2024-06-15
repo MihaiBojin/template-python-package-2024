@@ -23,3 +23,9 @@ get_tag_at_head() {
     TAG="$(git tag --contains HEAD)"
     echo "${TAG#v}"
 }
+
+# Extracts the project name as configured in 'pyproject.toml'
+get_project_name() {
+    dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+    python -c "import toml; print(toml.load('$dir/../pyproject.toml')['project']['name'])"
+}
