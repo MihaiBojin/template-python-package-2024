@@ -36,7 +36,7 @@ install:
 
 .PHONY: lint
 lint:
-	@echo "Running pre-commit hooks..."
+	@echo "Running linters..."
 	@pre-commit run --all-files
 
 .PHONY: test

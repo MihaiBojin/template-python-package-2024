@@ -59,3 +59,17 @@ Verify the distributed code
 ```shell
 make publish-verify
 ```
+
+## Building a Docker image
+
+Build an image with:
+
+```shell
+make docker
+```
+
+and run it with
+
+```shell
+make docker-run
+```
