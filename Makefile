@@ -28,8 +28,6 @@ setup:
 	@pip install -e ".[dev]"
 	@pre-commit install
 
-.PHONY: install
-install:
 	@echo "Installing all dependencies and editable package..."
 	@scripts/uninstall-package.bash
 	@pip install -e ".[cli,dev]"

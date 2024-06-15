@@ -46,7 +46,11 @@ exclude = [
     "scripts/**",
     "tests/**",
     # keep-sorted end
-    "!scripts/delete-venv.bash", # must appear after scripts/**
+
+    # If you want to include any scripts, list them below
+    # keep-sorted start
+    "!scripts/verify-publish.bash",
+    # keep-sorted end
 ]
 
 [tool.hatch.build.targets.wheel]

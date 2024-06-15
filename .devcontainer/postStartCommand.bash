@@ -6,4 +6,4 @@ DIR=python
 cd "$DIR"
 # shellcheck disable=SC1090
 eval "$(make venv)"
-make install
+make setup

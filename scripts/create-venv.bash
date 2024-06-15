@@ -15,7 +15,15 @@ if [ -d "$VENV" ]; then
 fi
 
 # Create virtualenv
-python -m venv "$VENV"
+PYTHON=python
+if command -v python3.11 >/dev/null 2>&1; then
+    PYTHON="python3.11"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+fi
+
+# Create virtualenv
+$PYTHON -m venv "$VENV"
 
 # shellcheck disable=SC1091
 source "$VENV"/bin/activate

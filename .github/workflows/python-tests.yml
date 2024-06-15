@@ -23,11 +23,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Configuring developer tools
         run: |
           make create-venv
           eval "$(make venv)"
-          make install
+          make setup
 
       - name: Run linters
         run: |
@@ -46,11 +46,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Configuring developer tools
         run: |
           make create-venv
           eval "$(make venv)"
-          make install
+          make setup
 
       - name: Run tests
         run: |
