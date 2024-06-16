@@ -25,12 +25,10 @@ venv:
 .PHONY: setup
 setup:
 	@echo "Setting up repo for development"
-	@pip install -e ".[dev]"
-	@pre-commit install
-
-	@echo "Installing all dependencies and editable package..."
 	@scripts/uninstall-package.bash
 	@pip install -e ".[cli,dev]"
+	@pre-commit install --install-hooks
+	@touch .env
 
 .PHONY: lint
 lint:

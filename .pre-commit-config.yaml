@@ -35,3 +35,11 @@ repos:
     rev: v0.4.0
     hooks:
       - id: keep-sorted
+
+  - repo: local
+    hooks:
+      - id: pre-push-hook
+        name: Pre-push hook
+        entry: scripts/pre-push.bash
+        language: script
+        stages: [push]
