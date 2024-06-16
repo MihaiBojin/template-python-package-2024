@@ -31,7 +31,7 @@ git tag v0.1.x
 git push origin v0.1.x
 ```
 
-A [GitHub Action](https://github.com/MihaiBojin/template-python-package-2024/actions) will run, build the library and publish it to the PyPI repositories.
+A [GitHub Action](https://github.com/MihaiBojin/template-python-package-2024/actions) will run, build the library and publish it to PyPI.
 
 ### Manual
 
