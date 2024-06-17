@@ -4,6 +4,7 @@
         "charliermarsh.ruff",
         "davidanson.vscode-markdownlint",
         "dbaeumer.vscode-eslint",
+        "foxundermoon.shell-format",
         "github.vscode-github-actions",
         "inferrinizzard.prettier-sql-vscode",
         "ms-azuretools.vscode-docker",
