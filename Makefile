@@ -68,7 +68,7 @@ docker:
 docker-run:
 	@echo
 	@echo "Running Docker image..."
-	@scripts/run-docker-image.bash
+	@scripts/run-docker-image.bash $(ARGS)
 
 .PHONY: publish-test
 publish-test: build

@@ -72,4 +72,6 @@ and run it with
 
 ```shell
 make docker-run
+# or
+make docker-run ARGS="--arg1 --arg2 --etc"
 ```
