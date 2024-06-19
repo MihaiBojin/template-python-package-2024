@@ -1,0 +1,61 @@
+name: Publish Docker Image to GitHub Container Registry
+
+on:
+  # Trigger only on v0.* tag pushes
+  push:
+    tags:
+      - "v0.*"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    # disable the workflow by default
+    # uncomment when ready to push images to GCR
+    if: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Configuring developer tools
+        run: |
+          make create-venv
+          eval "$(make venv)"
+          make setup
+
+      - name: Build Docker image
+        run: |
+          eval "$(make venv)"
+          source "scripts/functions.bash"
+          PROJECT_NAME="$(get_project_name)"
+          TAG="$(get_tag_at_head)"
+          OWNER="$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
+          make docker
+          docker tag "$PROJECT_NAME:$TAG" ghcr.io/$OWNER:${{ github.sha }}
+          docker tag "$PROJECT_NAME:$TAG" ghcr.io/$OWNER:$TAG
+          docker tag "$PROJECT_NAME:$TAG" ghcr.io/$OWNER:latest
+
+      - name: Push Docker image to GitHub Container Registry
+        run: |
+          eval "$(make venv)"
+          source "scripts/functions.bash"
+          PROJECT_NAME="$(get_project_name)"
+          TAG="$(get_tag_at_head)"
+          OWNER="$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
+          docker push ghcr.io/$OWNER:${{ github.sha }}
+          docker push ghcr.io/$OWNER:$TAG
+          docker push ghcr.io/$OWNER:latest
