@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Publish Python Package to PyPI
 
 on:
   # Trigger only on v0.* tag pushes

@@ -1,4 +1,4 @@
-name: Python Tests
+name: Run Python Linters and Tests
 
 on:
   # Trigger on PRs
