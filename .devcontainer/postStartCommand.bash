@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-DIR=python
+DIR=.
 
 # Ensure the up-to-date requirements are installed
 cd "$DIR"

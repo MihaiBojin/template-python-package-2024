@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-DIR=python
+DIR=.
 
 # Create a virtualenv
 cd "$DIR"
