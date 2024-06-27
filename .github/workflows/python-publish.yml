@@ -23,20 +23,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        working-directory: python
+        working-directory: .
         run: |
           make create-venv
           eval "$(make venv)"
           make install
 
       - name: Run linters
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           make lint
 
       - name: Run tests
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           pytest tests
@@ -58,19 +58,19 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        working-directory: python
+        working-directory: .
         run: |
           make create-venv
           eval "$(make venv)"
           make install
 
       - name: Set the correct (tag) version
-        working-directory: python
+        working-directory: .
         run: |
           scripts/detect-and-set-tag-version.bash
 
       - name: Build
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           make build
@@ -78,7 +78,7 @@ jobs:
       - name: Publish package to test repository
         env:
           TESTPYPI_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           make publish-test
@@ -86,7 +86,7 @@ jobs:
       - name: Publish package
         env:
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           make publish
@@ -95,7 +95,7 @@ jobs:
         run: sleep 30
 
       - name: Verify package install from PyPI
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           make publish-verify

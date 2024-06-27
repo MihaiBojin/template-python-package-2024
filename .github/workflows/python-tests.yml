@@ -27,20 +27,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        working-directory: python
+        working-directory: .
         run: |
           make create-venv
           eval "$(make venv)"
           make install
 
       - name: Run linters
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           make lint
 
       - name: Run tests
-        working-directory: python
+        working-directory: .
         run: |
           eval "$(make venv)"
           pytest tests
