@@ -1,4 +1,4 @@
-name: Run Python Linters and Tests
+name: Python Tests
 
 on:
   # Trigger on PRs
@@ -11,48 +11,36 @@ on:
       - main
 
 jobs:
-  lint:
+  lint-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
-      - name: Configuring developer tools
+      - name: Install dependencies
+        working-directory: python
         run: |
           make create-venv
           eval "$(make venv)"
-          make setup
+          make install
 
       - name: Run linters
+        working-directory: python
         run: |
           eval "$(make venv)"
           make lint
 
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Configuring developer tools
-        run: |
-          make create-venv
-          eval "$(make venv)"
-          make setup
-
       - name: Run tests
+        working-directory: python
         run: |
           eval "$(make venv)"
           pytest tests

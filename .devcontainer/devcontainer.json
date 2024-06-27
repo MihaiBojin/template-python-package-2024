@@ -5,7 +5,7 @@
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "VARIANT": "3.11-bookworm"
+      "VARIANT": "3.12-bookworm"
     }
   },
   // Configure tool-specific properties.

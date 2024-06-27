@@ -7,13 +7,47 @@ on:
       - "v0.*"
 
 jobs:
-  build-and-push:
+  lint-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        working-directory: python
+        run: |
+          make create-venv
+          eval "$(make venv)"
+          make install
+
+      - name: Run linters
+        working-directory: python
+        run: |
+          eval "$(make venv)"
+          make lint
+
+      - name: Run tests
+        working-directory: python
+        run: |
+          eval "$(make venv)"
+          pytest tests
+
+  push:
     # disable the workflow by default
-    # uncomment when ready to push images to GCR
+    # uncomment when ready to publish to PyPI
     if: false
 
+    needs: lint-test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,13 +63,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
-      - name: Configuring developer tools
+      - name: Install dependencies
         run: |
           make create-venv
           eval "$(make venv)"
-          make setup
+          make install
 
       - name: Build Docker image
         run: |

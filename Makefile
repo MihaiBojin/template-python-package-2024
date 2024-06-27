@@ -1,5 +1,9 @@
 SHELL := /bin/bash
 
+.PHONY: venv
+venv:
+	@echo "source venv/bin/activate"
+
 .PHONY: clean
 clean: clean-venv
 	@echo Cleaning up builds and caches...
@@ -18,21 +22,22 @@ create-venv:
 	@echo "Creating virtualenv..."
 	@scripts/create-venv.bash
 
-.PHONY: venv
-venv:
-	@echo "source venv/bin/activate"
+.PHONY: install
+install:
+	@echo "Installing packages in editable mode..."
+	@python -m pip install -e ".[dev]" # toml
+	@scripts/uninstall-package.bash
+	@python -m pip install -e ".[cli,dev]"
 
 .PHONY: setup
-setup:
-	@echo "Setting up repo for development"
-	@scripts/uninstall-package.bash
-	@pip install -e ".[cli,dev]"
+setup: install
+	@echo "Setting up repo for local development..."
 	@pre-commit install --install-hooks
 	@touch .env
 
 .PHONY: lint
 lint:
-	@echo "Running linters..."
+	@echo "Running pre-commit hooks..."
 	@pre-commit run --all-files
 
 .PHONY: test

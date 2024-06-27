@@ -11,12 +11,13 @@ if [ -d "$VENV" ]; then
     echo "Directory already exists: $VENV" >&2
     echo "Will not recreate it." >&2
     echo
-    exit 1
+    exit 0
 fi
 
-# Create virtualenv
 PYTHON=python
-if command -v python3.11 >/dev/null 2>&1; then
+if command -v python3.12 >/dev/null 2>&1; then
+    PYTHON="python3.12"
+elif command -v python3.11 >/dev/null 2>&1; then
     PYTHON="python3.11"
 elif command -v python3 >/dev/null 2>&1; then
     PYTHON="python3"
