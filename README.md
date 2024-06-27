@@ -3,7 +3,7 @@
 ![Build Status](https://github.com/MihaiBojin/template-python-package-2024/actions/workflows/python-tests.yml/badge.svg)
 [![PyPI version](https://badge.fury.io/py/template-python-package-2024.svg)](https://badge.fury.io/py/template-python-package-2024)
 [![Python Versions](https://img.shields.io/pypi/pyversions/template-python-package-2024.svg)](https://pypi.org/project/template-python-package-2024/)
-[![License](https://img.shields.io/github/license/template-python-package-2024/template-python-package-2024.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/MihaiBojin/template-python-package-2024.svg)](LICENSE)
 
 Use this repo as a template for starting multi-package Python projects.
 
