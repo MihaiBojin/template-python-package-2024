@@ -8,14 +8,17 @@ authors = [
     { name = "Mihai Bojin", email = "557584+MihaiBojin@users.noreply.github.com" },
 ]
 dynamic = ["dependencies", "optional-dependencies", "version"]
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ] # https://pypi.org/classifiers/
 
 [project.urls]
