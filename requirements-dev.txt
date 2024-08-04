@@ -5,6 +5,6 @@ pre-commit ==3.8.0
 pytest ==8.3.2
 toml == 0.10.2
 twine ==5.1.1
-wheel == 0.43.0
+wheel ==0.44.0
 wheel-inspect == 1.7.1
 # keep-sorted end
