@@ -1,7 +1,7 @@
 # DEV requirements
 # keep-sorted start
 build ==1.2.2.post1
-pre-commit ==4.0.0
+pre-commit ==4.0.1
 pytest ==8.3.2
 toml == 0.10.2
 twine ==5.1.1
