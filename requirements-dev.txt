@@ -4,7 +4,7 @@ build ==1.2.2.post1
 pre-commit ==4.0.1
 pytest ==8.3.3
 toml == 0.10.2
-twine ==5.1.1
+twine ==6.0.1
 wheel ==0.45.1
 wheel-inspect == 1.7.1
 # keep-sorted end
