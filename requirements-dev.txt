@@ -2,7 +2,7 @@
 # keep-sorted start
 build ==1.2.2.post1
 pre-commit ==4.1.0
-pytest ==8.3.4
+pytest ==8.4.2
 toml == 0.10.2
 twine ==6.1.0
 wheel ==0.45.1
