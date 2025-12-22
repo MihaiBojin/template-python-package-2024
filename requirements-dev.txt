@@ -6,5 +6,5 @@ pytest ==8.3.4
 toml == 0.10.2
 twine ==6.1.0
 wheel ==0.45.1
-wheel-inspect ==1.7.2
+wheel-inspect ==1.8.0
 # keep-sorted end
