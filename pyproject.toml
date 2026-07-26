@@ -1,8 +1,8 @@
 [project]
-name = 'template_python_package_2024'
+name = 'template_python_package'
 license = "Apache-2.0"
 description = "A starter template for Python packages."
-keywords = ["python", "package", "template", "2024"]
+keywords = ["python", "package", "template", "starter"]
 readme = { "file" = "README.md", "content-type" = "text/markdown" }
 authors = [
     { name = "Mihai Bojin", email = "557584+MihaiBojin@users.noreply.github.com" },
@@ -36,9 +36,9 @@ dev = [
 ]
 
 [project.urls]
-"Bug reports" = "https://github.com/MihaiBojin/template_python_package_2024/issues/new"
-"Documentation" = "https://github.com/MihaiBojin/template_python_package_2024/blob/main/python/README.md"
-"Source" = "https://github.com/MihaiBojin/template_python_package_2024"
+"Bug reports" = "https://github.com/MihaiBojin/template-python-package/issues/new"
+"Documentation" = "https://github.com/MihaiBojin/template-python-package/blob/main/README.md"
+"Source" = "https://github.com/MihaiBojin/template-python-package"
 
 [project.scripts]
 demo-cli = "template_cli_package.demo_cli:main"
