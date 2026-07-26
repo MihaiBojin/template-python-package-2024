@@ -1,9 +1,9 @@
 # DEV requirements
 # keep-sorted start
-build ==1.2.2.post1
-pre-commit ==4.1.0
+build ==1.5.0
+pre-commit ==4.6.1
 pytest ==8.3.4
-twine ==6.1.0
+twine ==6.2.0
 wheel ==0.45.1
-wheel-inspect ==1.7.2
+wheel-inspect ==1.8.0
 # keep-sorted end
