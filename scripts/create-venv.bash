@@ -15,7 +15,11 @@ if [ -d "$VENV" ]; then
 fi
 
 PYTHON=python
-if command -v python3.12 >/dev/null 2>&1; then
+if command -v python3.14 >/dev/null 2>&1; then
+    PYTHON="python3.14"
+elif command -v python3.13 >/dev/null 2>&1; then
+    PYTHON="python3.13"
+elif command -v python3.12 >/dev/null 2>&1; then
     PYTHON="python3.12"
 elif command -v python3.11 >/dev/null 2>&1; then
     PYTHON="python3.11"

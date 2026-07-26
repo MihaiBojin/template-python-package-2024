@@ -27,5 +27,5 @@ get_tag_at_head() {
 # Extracts the project name as configured in 'pyproject.toml'
 get_project_name() {
     dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-    python -c "import toml; print(toml.load('$dir/../pyproject.toml')['project']['name'])"
+    python -c "import tomllib; print(tomllib.load(open('$dir/../pyproject.toml','rb'))['project']['name'])"
 }
