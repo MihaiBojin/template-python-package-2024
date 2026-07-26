@@ -15,24 +15,24 @@ repos:
       # keep-sorted end
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
+    rev: v0.16.0
     hooks:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.20.2
     hooks:
       - id: mypy
 
   - repo: https://gitlab.com/bmares/check-json5
-    rev: v1.0.0
+    rev: v1.0.1
     hooks:
       - id: check-json5
 
   - repo: https://github.com/google/keep-sorted
-    rev: v0.4.0
+    rev: v0.9.1
     hooks:
       - id: keep-sorted
 
