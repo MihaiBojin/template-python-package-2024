@@ -26,7 +26,7 @@ fi
 readonly TAG
 
 # Load project name from project manifest
-PROJECT_NAME="$(python -c "import toml; print(toml.load('$DIR/../pyproject.toml')['project']['name'])")"
+PROJECT_NAME="$(python -c "import tomllib; print(tomllib.load(open('$DIR/../pyproject.toml','rb'))['project']['name'])")"
 readonly PROJECT_NAME
 
 echo "Updating version in '$VERSION_FILE' to: $VERSION"
