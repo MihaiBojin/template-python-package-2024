@@ -56,8 +56,14 @@ echo "Attempting to install version ($VERSION) in virtualenv ($VENV)..."
 while [[ "$#" -gt 0 ]]; do
     case $1 in
     --test)
-        echo "Installing requirements-cli from main index, since not all packages are available in test.pypi..."
-        pip install -r "$DIR"/../requirements-cli.txt
+        # The cli extras come from the main index because test.pypi does not
+        # carry every third-party package.
+        CLI_DEPS="$(python -c "import tomllib; print(' '.join(tomllib.load(open('$DIR/../pyproject.toml','rb'))['project'].get('optional-dependencies', {}).get('cli', [])))")"
+        if [ -n "$CLI_DEPS" ]; then
+            echo "Installing cli extras from main index, since not all packages are available in test.pypi..."
+            # shellcheck disable=SC2086
+            pip install $CLI_DEPS
+        fi
         echo "Attempting install: ${PROJECT_NAME}==$VERSION"
         retry pip install --index-url https://test.pypi.org/simple/ "${PROJECT_NAME}==$VERSION"
         ;;
