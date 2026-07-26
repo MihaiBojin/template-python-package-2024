@@ -1,23 +1,27 @@
-# Python Package template - 2024
+# Python Package template
 
-![Build Status](https://github.com/MihaiBojin/template-python-package-2024/actions/workflows/python-tests.yml/badge.svg)
-[![PyPI version](https://badge.fury.io/py/template-python-package-2024.svg)](https://badge.fury.io/py/template-python-package-2024)
-[![Python Versions](https://img.shields.io/pypi/pyversions/template-python-package-2024.svg)](https://pypi.org/project/template-python-package-2024/)
-[![License](https://img.shields.io/github/license/MihaiBojin/template-python-package-2024.svg)](LICENSE)
+![Build Status](https://github.com/MihaiBojin/template-python-package/actions/workflows/python-tests.yml/badge.svg)
+[![License](https://img.shields.io/github/license/MihaiBojin/template-python-package.svg)](LICENSE)
 
 Use this repo as a template for starting multi-package Python projects.
 
 ## Quickstart
 
-The project is published to <https://pypi.org/project/template-python-package-2024/>.
-Install it via:
+Press **Use this template** on GitHub, or clone it:
 
 ```shell
-pip install template-python-package-2024
-
-# or alternatively, directly from git
-pip install "git+https://github.com/MihaiBojin/template-python-package-2024@main"
+git clone https://github.com/MihaiBojin/template-python-package.git my-project
 ```
+
+Then claim the name as your own: `name` and `[project.urls]` in
+`pyproject.toml`, the package directories under `src/`, and the entry point
+under `[project.scripts]`.
+
+This template is not published to PyPI, and it is not meant to be. Nobody
+installs a template; you copy it. Note that `template-python-package` on PyPI
+is an unrelated project by another author, so choose your own name before you
+publish anything. The publish workflow stays disabled (`if: false`) until you
+do.
 
 ## Publishing to PyPI
 
@@ -31,7 +35,7 @@ git tag v0.1.x
 git push origin v0.1.x
 ```
 
-A [GitHub Action](https://github.com/MihaiBojin/template-python-package-2024/actions) will run, build the library and publish it to PyPI.
+A [GitHub Action](https://github.com/MihaiBojin/template-python-package/actions) will run, build the library and publish it to PyPI.
 
 ### Manual
 
