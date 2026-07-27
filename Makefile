@@ -79,7 +79,7 @@ docker-run:
 .PHONY: publish-test
 publish-test: build
 	@echo "Publishing to test repo..."
-	@UV_PUBLISH_TOKEN=$(TESTPYPI_PASSWORD) uv publish --index testpypi
+	@uv publish --index testpypi
 
 .PHONY: publish-test-verify
 publish-test-verify:
@@ -89,7 +89,7 @@ publish-test-verify:
 .PHONY: publish
 publish: build
 	@echo "Publishing to PyPI..."
-	@UV_PUBLISH_TOKEN=$(PYPI_PASSWORD) uv publish
+	@uv publish
 
 .PHONY: publish-verify
 publish-verify:

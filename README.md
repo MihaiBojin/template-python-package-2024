@@ -52,9 +52,47 @@ do.
 
 ## Publishing to PyPI
 
-### GitHub-based version publishing
+This template publishes nothing itself. The workflow is wired up and switched
+off, so a project started from it needs a name, a trusted publisher, and one
+deleted line.
 
-The simplest way to publish a new version (if you have committer rights) is to tag a commit and push it to the repo:
+### One-time setup
+
+1. **Name the package.** Set `name` in `pyproject.toml` and check it is free on
+   PyPI first. `template_python_package` is taken by an unrelated project, so
+   leaving the template's name in place will fail.
+
+2. **Register a trusted publisher** on PyPI, under the project's *Publishing*
+   settings. For a project that does not exist yet, use the *pending publisher*
+   flow.
+
+   | Field | Value |
+   | --- | --- |
+   | Owner | your GitHub user or org |
+   | Repository | your repository name |
+   | Workflow | `python-publish.yml` |
+   | Environment | `pypi` |
+
+   Repeat on [test.pypi.org](https://test.pypi.org) with environment `testpypi`.
+
+3. **Create the GitHub environments** `pypi` and `testpypi` under *Settings →
+   Environments*. Add a required reviewer on `pypi` if you want a human gate
+   before anything reaches the real index.
+
+4. **Enable publishing** by deleting the `if: false` line from the
+   `publish-test` and `publish` jobs in `.github/workflows/python-publish.yml`.
+
+No API tokens, and nothing to store in repository secrets. GitHub mints a
+short-lived OIDC token per run and PyPI exchanges it for a scoped credential.
+
+> [!IMPORTANT]
+> PyPI matches the request against the workflow **filename**. Renaming
+> `python-publish.yml` breaks publishing with an unhelpful error; re-register the
+> publisher if you move it.
+
+### Publishing a version
+
+Tag a commit and push it:
 
 ```shell
 # At a certain commit, ideally after merging a PR to main
@@ -62,37 +100,23 @@ git tag v0.1.x
 git push origin v0.1.x
 ```
 
-A [GitHub Action](https://github.com/MihaiBojin/template-python-package/actions) will run, build the library and publish it to PyPI.
+The workflow lints and tests across every supported Python, builds once, then
+publishes that same artifact to TestPyPI and to PyPI, and finally verifies the
+package installs from the real index.
 
-### Manual
+### Publishing by hand
 
-These steps can also be performed locally. For these commands to work, you will need to export two environment variables:
-
-```shell
-export TESTPYPI_PASSWORD=... # token for https://test.pypi.org/legacy/
-export PYPI_PASSWORD=... # token for https://upload.pypi.org/legacy/
-```
-
-The `Makefile` passes these to `uv publish` as `UV_PUBLISH_TOKEN`; the test
-index is defined as `testpypi` under `[[tool.uv.index]]` in `pyproject.toml`.
-
-First, publish to the test repo and inspect the package:
+Local publishing needs a token, since trusted publishing only works from CI:
 
 ```shell
-make publish-test
+export UV_PUBLISH_TOKEN=...   # a PyPI API token
+make publish-test             # test.pypi.org first
+make publish                  # then the real index
+make publish-verify           # confirm it installs
 ```
 
-If correct, distribute the wheel to the PyPI index:
-
-```shell
-make publish
-```
-
-Verify the distributed code
-
-```shell
-make publish-verify
-```
+Prefer the tag flow. A token that lives on a laptop is the thing trusted
+publishing exists to avoid.
 
 ## Building a Docker image
 

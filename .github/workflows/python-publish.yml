@@ -1,10 +1,21 @@
 name: Publish to PyPI
 
+# Publishing uses PyPI Trusted Publishing (OIDC), so no API token is stored
+# anywhere. PyPI matches the request against the repository, the workflow
+# FILENAME, and the environment. Renaming this file breaks publishing with a
+# confusing error — re-register the publisher on PyPI if you ever move it.
+#
+# See README, "Publishing to PyPI", for the one-time setup.
+
 on:
   # Trigger only on v0.* tag pushes
   push:
     tags:
       - "v0.*"
+
+# Least privilege by default. The publishing jobs widen this themselves.
+permissions:
+  contents: read
 
 jobs:
   lint-test:
@@ -37,11 +48,9 @@ jobs:
         working-directory: .
         run: uv run pytest tests
 
-  publish:
-    # disable the workflow by default
-    # uncomment when ready to publish to PyPI
-    if: false
-
+  # Built once and handed to both publish jobs, so the artifact uploaded to
+  # PyPI is byte-for-byte the one that went to TestPyPI.
+  build:
     needs: lint-test
     runs-on: ubuntu-latest
     steps:
@@ -62,17 +71,75 @@ jobs:
         working-directory: .
         run: uv build
 
+      - name: Upload distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-test:
+    # Publishing is off in the template itself, which has nothing to release.
+    # Delete this line in your project once the trusted publisher is registered.
+    if: false
+
+    needs: build
+    runs-on: ubuntu-latest
+    # Binds this job to the trusted publisher registered for `testpypi`.
+    environment: testpypi
+    permissions:
+      # Required: lets the job mint the OIDC token PyPI exchanges for a
+      # short-lived, scoped credential. Without it uv has nothing to present.
+      id-token: write
+      contents: read
+    steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
       - name: Publish package to test repository
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.TESTPYPI_PASSWORD }}
-        working-directory: .
-        run: uv publish --index testpypi
+        # `always` rather than the default `automatic`: fail loudly if OIDC is
+        # unavailable instead of silently falling back to looking for a token.
+        run: uv publish --index testpypi --trusted-publishing always
+
+  publish:
+    # Publishing is off in the template itself, which has nothing to release.
+    # Delete this line in your project once the trusted publisher is registered.
+    if: false
+
+    needs: publish-test
+    runs-on: ubuntu-latest
+    # Binds this job to the trusted publisher registered for `pypi`. Add a
+    # required reviewer on this environment if you want a manual gate before
+    # anything reaches the real index.
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
 
       - name: Publish package
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_PASSWORD }}
-        working-directory: .
-        run: uv publish
+        run: uv publish --trusted-publishing always
 
       - name: Waiting 30 seconds for the PyPI indexes to be updated
         run: sleep 30
