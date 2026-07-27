@@ -1,63 +1,64 @@
 SHELL := /bin/bash
 
+# These targets are thin wrappers over uv, kept for muscle memory.
+# Everything they do can be done by calling uv directly.
+
 .PHONY: venv
 venv:
-	@echo "source venv/bin/activate"
+	@echo "source .venv/bin/activate"
 
 .PHONY: clean
 clean: clean-venv
 	@echo Cleaning up builds and caches...
 	@rm -rf {out,dist,build,.mypy_cache,.ruff_cache}
-	@find . -type d -path ./venv -prune -o -name ".pytest_cache" -exec rm -rf {} \;
-	@find . -type d -path ./venv -prune -o -name "__pycache__" -exec rm -rf {} \;
-	@find . -type d -path ./venv -prune -o -name "*.egg-info" -exec rm -rf {} \;
+	@find . -type d -path ./.venv -prune -o -name ".pytest_cache" -exec rm -rf {} \;
+	@find . -type d -path ./.venv -prune -o -name "__pycache__" -exec rm -rf {} \;
+	@find . -type d -path ./.venv -prune -o -name "*.egg-info" -exec rm -rf {} \;
 
 .PHONY: clean-venv
 clean-venv:
 	@echo "Deleting virtualenv..."
-	@scripts/delete-venv.bash
+	@rm -rf .venv
 
 .PHONY: create-venv
 create-venv:
 	@echo "Creating virtualenv..."
-	@scripts/create-venv.bash
+	@uv venv
 
 .PHONY: install
 install:
-	@echo "Installing packages in editable mode..."
-	@python -m pip install -e ".[dev]" # toml
-	@scripts/uninstall-package.bash
-	@python -m pip install -e ".[cli,dev]"
+	@echo "Syncing the environment..."
+	@uv sync --all-extras
 
 .PHONY: setup
 setup: install
 	@echo "Setting up repo for local development..."
-	@pre-commit install --install-hooks
+	@uv run pre-commit install --install-hooks
 	@touch .env
 
 .PHONY: lint
 lint:
 	@echo "Running pre-commit hooks..."
-	@pre-commit run --all-files
+	@uv run pre-commit run --all-files
 
 .PHONY: test
 test:
 	@echo "Running tests..."
-	@pytest tests
+	@uv run pytest tests
 
 .PHONY: build
 build:
 	@echo Cleaning up previous builds...
 	@rm -rf dist/
 	@echo "Building..."
-	@python -m build
+	@uv build
 
 .PHONY: build-inspect
-build-inspect: PROJECT_NAME = $(shell python -c "import toml; print(toml.load('pyproject.toml')['project']['name'])")
+build-inspect: PROJECT_NAME = $(shell scripts/project-name.bash)
 build-inspect:
 	@echo
 	@echo "Inspecting wheel..."
-	@wheel2json dist/$(PROJECT_NAME)-$(shell cat VERSION)-py3-none-any.whl
+	@uv run wheel2json dist/$(PROJECT_NAME)-$(shell cat VERSION)-py3-none-any.whl
 
 	@echo
 	@echo "Inspecting archive..."
@@ -78,7 +79,7 @@ docker-run:
 .PHONY: publish-test
 publish-test: build
 	@echo "Publishing to test repo..."
-	@TWINE_PASSWORD=$(TESTPYPI_PASSWORD) twine upload --repository-url https://test.pypi.org/legacy/ dist/\*
+	@UV_PUBLISH_TOKEN=$(TESTPYPI_PASSWORD) uv publish --index testpypi
 
 .PHONY: publish-test-verify
 publish-test-verify:
@@ -88,7 +89,7 @@ publish-test-verify:
 .PHONY: publish
 publish: build
 	@echo "Publishing to PyPI..."
-	@TWINE_PASSWORD=$(PYPI_PASSWORD) twine upload dist/\*
+	@UV_PUBLISH_TOKEN=$(PYPI_PASSWORD) uv publish
 
 .PHONY: publish-verify
 publish-verify:

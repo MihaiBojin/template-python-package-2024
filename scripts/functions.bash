@@ -25,7 +25,8 @@ get_tag_at_head() {
 }
 
 # Extracts the project name as configured in 'pyproject.toml'
+# '--no-project' keeps this usable before the environment has been synced.
 get_project_name() {
     dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-    python -c "import tomllib; print(tomllib.load(open('$dir/../pyproject.toml','rb'))['project']['name'])"
+    uv run --no-project python -c "import tomllib; print(tomllib.load(open('$dir/../pyproject.toml','rb'))['project']['name'])"
 }

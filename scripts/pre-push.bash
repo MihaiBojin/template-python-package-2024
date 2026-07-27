@@ -7,10 +7,8 @@ readonly DIR
 echo "Running pre-push hook..."
 pushd "$DIR/.." >/dev/null 2>&1 || (echo "Could not set working directory" && exit 1)
 
-if [ -z "${VIRTUAL_ENV:-}" ]; then
-    echo "Virtual env not found, activating default venv..."
-    eval "$(make venv)"
-fi
+echo "Syncing the environment..."
+uv sync --all-extras
 
 echo "Running linters..."
 make lint

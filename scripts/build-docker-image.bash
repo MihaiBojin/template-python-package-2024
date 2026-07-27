@@ -26,28 +26,26 @@ fi
 readonly TAG
 
 # Load project name from project manifest
-PROJECT_NAME="$(python -c "import tomllib; print(tomllib.load(open('$DIR/../pyproject.toml','rb'))['project']['name'])")"
+PROJECT_NAME="$(get_project_name)"
 readonly PROJECT_NAME
+
+# The image builds the package from source, reading VERSION during the docker
+# build, so the release value has to stay in place until the build finishes.
+# Restoring the previous contents (rather than `git checkout --`) keeps an
+# uncommitted VERSION edit from being thrown away.
+PREVIOUS_VERSION="$(cat "$VERSION_FILE")"
+readonly PREVIOUS_VERSION
+restore_version() {
+    echo "Reverting version to repository value..."
+    echo "$PREVIOUS_VERSION" >"$VERSION_FILE"
+}
+trap restore_version EXIT
 
 echo "Updating version in '$VERSION_FILE' to: $VERSION"
 echo "$VERSION" >"$VERSION_FILE"
 
-echo "Building $PROJECT_NAME:$TAG..."
-if ! make build; then
-    # Revert the version file if erroring out
-    echo "Reverting version to repository value..."
-    git checkout -- "$VERSION_FILE"
-    echo
-    echo "Aborting..." 2>&1
-    exit 1
-fi
-# Revert the version after the dist/ was built
-echo "Reverting version to repository value..."
-git checkout -- "$VERSION_FILE"
-
 # Build the image
+echo "Building $PROJECT_NAME:$TAG..."
 docker build \
-    --build-arg PROJECT_NAME="$PROJECT_NAME" \
-    --build-arg VERSION="$VERSION" \
     -t "$PROJECT_NAME:$TAG" \
-    .
+    "$DIR/.."

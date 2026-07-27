@@ -17,29 +17,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+      - name: Set up uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v9
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Install dependencies
         working-directory: .
-        run: |
-          make create-venv
-          eval "$(make venv)"
-          make install
+        # --locked fails the build on a stale uv.lock, rather than quietly
+        # resolving something the lock file never described
+        run: uv sync --all-extras --locked
 
       - name: Run linters
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          make lint
+        run: uv run pre-commit run --all-files
 
       - name: Run tests
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          pytest tests
+        run: uv run pytest tests
 
   publish:
     # disable the workflow by default
@@ -52,50 +48,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9
         with:
           python-version: "3.14"
-
-      - name: Install dependencies
-        working-directory: .
-        run: |
-          make create-venv
-          eval "$(make venv)"
-          make install
+          enable-cache: true
 
       - name: Set the correct (tag) version
         working-directory: .
-        run: |
-          scripts/detect-and-set-tag-version.bash
+        run: scripts/detect-and-set-tag-version.bash
 
       - name: Build
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          make build
+        run: uv build
 
       - name: Publish package to test repository
         env:
-          TESTPYPI_PASSWORD: ${{ secrets.TESTPYPI_PASSWORD }}
+          UV_PUBLISH_TOKEN: ${{ secrets.TESTPYPI_PASSWORD }}
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          make publish-test
+        run: uv publish --index testpypi
 
       - name: Publish package
         env:
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_PASSWORD }}
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          make publish
+        run: uv publish
 
       - name: Waiting 30 seconds for the PyPI indexes to be updated
         run: sleep 30
 
       - name: Verify package install from PyPI
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          make publish-verify
+        run: scripts/verify-publish.bash --prod

@@ -26,12 +26,9 @@ classifiers = [
 cli = []
 dev = [
     # keep-sorted start
-    "build==1.5.0",
     "pre-commit==4.6.1",
     "pytest==9.1.1",
-    "twine==6.2.0",
     "wheel-inspect==1.8.0",
-    "wheel==0.47.0",
     # keep-sorted end
 ]
 
@@ -43,25 +40,41 @@ dev = [
 [project.scripts]
 demo-cli = "template_cli_package.demo_cli:main"
 
+# uv is the front end; hatchling stays the build backend.
+# `explicit = true` keeps test.pypi out of dependency resolution: it is only
+# ever addressed by name, via `uv publish --index testpypi`.
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
 # https://git-scm.com/docs/gitignore#_pattern_format
+#
+# Directories must use the '/**' form. A bare directory name loses to a
+# re-inclusion in .gitignore -- '!.vscode/settings.json' there was enough to
+# pull .vscode into the sdist despite a '.vscode' entry here.
 exclude = [
     # keep-sorted start
-    ".devcontainer",
+    ".devcontainer/**",
+    ".dockerignore",
     ".env",
-    ".github",
+    ".github/**",
     ".pre-commit-config.yaml",
     ".pypirc",
-    ".vscode",
+    ".python-version",
+    ".vscode/**",
     "Dockerfile",
     "Makefile",
     "renovate.json",
     "scripts/**",
     "tests/**",
+    "uv.lock",
     # keep-sorted end
 
     # If you want to include any scripts, list them below
@@ -72,9 +85,6 @@ exclude = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/template_package", "src/template_cli_package"]
-
-[tool.hatch.envs.venv]
-type = "virtual"
 
 [tool.hatch.version]
 path = "./VERSION"
