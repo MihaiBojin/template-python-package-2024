@@ -21,26 +21,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v7
+      - name: Set up uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
       - name: Install dependencies
         working-directory: .
-        run: |
-          make create-venv
-          eval "$(make venv)"
-          make install
+        # --locked fails the build on a stale uv.lock, rather than quietly
+        # resolving something the lock file never described
+        run: uv sync --all-extras --locked
 
       - name: Run linters
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          make lint
+        run: uv run pre-commit run --all-files
 
       - name: Run tests
         working-directory: .
-        run: |
-          eval "$(make venv)"
-          pytest tests
+        run: uv run pytest tests

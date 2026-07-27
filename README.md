@@ -13,9 +13,36 @@ Press **Use this template** on GitHub, or clone it:
 git clone https://github.com/MihaiBojin/template-python-package.git my-project
 ```
 
+This template uses [uv](https://docs.astral.sh/uv/). Install it, then one
+command gets you a working development environment:
+
+```shell
+cd my-project
+uv sync --all-extras
+```
+
+That creates `.venv/`, installs everything from the committed `uv.lock`, and
+provisions a Python interpreter if you do not have a suitable one. Run
+commands through `uv run` (`uv run pytest tests`) or activate the environment
+with `source .venv/bin/activate`.
+
+To also install the git hooks, run `make setup`. The `Makefile` targets are
+thin wrappers over `uv` and are kept for convenience.
+
 Then claim the name as your own: `name` and `[project.urls]` in
 `pyproject.toml`, the package directories under `src/`, and the entry point
 under `[project.scripts]`.
+
+### Dependencies
+
+Declare them in `pyproject.toml`, then refresh the lock file:
+
+```shell
+uv lock
+```
+
+Commit `uv.lock` alongside the `pyproject.toml` change; CI runs
+`uv sync --locked` and fails if the two disagree.
 
 This template is not published to PyPI, and it is not meant to be. Nobody
 installs a template; you copy it. Note that `template-python-package` on PyPI
@@ -45,6 +72,9 @@ These steps can also be performed locally. For these commands to work, you will 
 export TESTPYPI_PASSWORD=... # token for https://test.pypi.org/legacy/
 export PYPI_PASSWORD=... # token for https://upload.pypi.org/legacy/
 ```
+
+The `Makefile` passes these to `uv publish` as `UV_PUBLISH_TOKEN`; the test
+index is defined as `testpypi` under `[[tool.uv.index]]` in `pyproject.toml`.
 
 First, publish to the test repo and inspect the package:
 

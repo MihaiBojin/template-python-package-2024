@@ -1,0 +1,19 @@
+# The Dockerfile does `COPY . /app`; keep the build context small and keep
+# host-built artifacts (a .venv with absolute host paths, most of all) out of
+# the image.
+# keep-sorted start
+**/*.egg-info
+**/__pycache__
+.devcontainer
+.env
+.git
+.github
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.venv
+.vscode
+build/
+dist/
+venv/
+# keep-sorted end

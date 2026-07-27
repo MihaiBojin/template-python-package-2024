@@ -4,6 +4,6 @@ DIR=.
 
 # Ensure the up-to-date requirements are installed
 cd "$DIR"
-# shellcheck disable=SC1090
-eval "$(make venv)"
+# shellcheck disable=SC1091
+source "$HOME/.local/bin/env"
 make setup

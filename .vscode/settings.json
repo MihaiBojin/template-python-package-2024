@@ -3,7 +3,7 @@
     "shellcheck",
   ],
   "editor.formatOnSave": true,
-  "python.defaultInterpreterPath": "venv/bin/python",
+  "python.defaultInterpreterPath": ".venv/bin/python",
   "python.terminal.activateEnvInCurrentTerminal": true,
   "python.envFile": "${workspaceFolder}/.env",
   "terminal.integrated.defaultProfile.linux": "zsh",
