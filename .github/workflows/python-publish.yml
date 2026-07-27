@@ -37,9 +37,16 @@ jobs:
         working-directory: .
         run: uv run pytest tests
 
-  publish:
-    # disable the workflow by default
-    # uncomment when ready to publish to PyPI
+  # Publishing uses PyPI Trusted Publishing (OIDC): no tokens, no secrets.
+  # It requires one-time setup on PyPI and test.PyPI before it can work --
+  # see "Enabling the publish workflow" in the README.
+  #
+  # Build once, then publish the same artifacts to both indexes. The jobs are
+  # split because a job may declare only one `environment`, and each index is
+  # a separate deployment target with its own trusted publisher.
+  build:
+    # The publish flow is disabled until the README setup is done.
+    # Delete this line to enable it; the jobs below are gated through `needs`.
     if: false
 
     needs: lint-test
@@ -62,17 +69,81 @@ jobs:
         working-directory: .
         run: uv build
 
+      - name: Upload distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-test:
+    needs: build
+    runs-on: ubuntu-latest
+    # The environment name is part of what PyPI verifies, so it has to match
+    # the trusted publisher registered on test.pypi.org.
+    environment:
+      name: testpypi
+    permissions:
+      # Mint the OIDC token uv exchanges for an upload token
+      id-token: write
+      contents: read
+    steps:
+      # Needed for the [[tool.uv.index]] definition of `testpypi`
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      # `always` rather than the default `automatic`: fail loudly if the OIDC
+      # setup is broken, instead of falling back to an anonymous upload.
       - name: Publish package to test repository
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.TESTPYPI_PASSWORD }}
         working-directory: .
-        run: uv publish --index testpypi
+        run: uv publish --index testpypi --trusted-publishing always
+
+  publish:
+    needs: publish-test
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      # Run before anything writes to the working tree: the script refuses to
+      # run on a dirty checkout. verify-publish.bash reads the VERSION file to
+      # decide which release to install.
+      - name: Set the correct (tag) version
+        working-directory: .
+        run: scripts/detect-and-set-tag-version.bash
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
 
       - name: Publish package
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_PASSWORD }}
         working-directory: .
-        run: uv publish
+        run: uv publish --trusted-publishing always
 
       - name: Waiting 30 seconds for the PyPI indexes to be updated
         run: sleep 30
