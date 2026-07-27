@@ -62,25 +62,31 @@ deleted line.
    PyPI first. `template_python_package` is taken by an unrelated project, so
    leaving the template's name in place will fail.
 
-2. **Register a trusted publisher** on PyPI, under the project's *Publishing*
-   settings. For a project that does not exist yet, use the *pending publisher*
-   flow.
+2. **Register a pending publisher, once on each index.** PyPI and TestPyPI are
+   separate registries with separate accounts, so do this twice:
+   [pypi.org](https://pypi.org/manage/account/publishing/) and
+   [test.pypi.org](https://test.pypi.org/manage/account/publishing/). Both live
+   under the *account* sidebar's Publishing page — the project sidebar only
+   offers this for projects that already exist.
 
    | Field | Value |
    | --- | --- |
    | Owner | your GitHub user or org |
    | Repository | your repository name |
-   | Workflow | `python-publish.yml` |
-   | Environment | `pypi` |
+   | Workflow | `python-publish.yml` (filename only, not a path) |
+   | Environment | `pypi` on PyPI, `testpypi` on TestPyPI |
 
-   Repeat on [test.pypi.org](https://test.pypi.org) with environment `testpypi`.
+   A pending publisher does **not** reserve the name. If someone else registers
+   it before your first upload, yours is invalidated. On the first successful
+   publish it converts to a normal publisher.
 
 3. **Create the GitHub environments** `pypi` and `testpypi` under *Settings →
    Environments*. Add a required reviewer on `pypi` if you want a human gate
    before anything reaches the real index.
 
-4. **Enable publishing** by deleting the `if: false` line from the
-   `publish-test` and `publish` jobs in `.github/workflows/python-publish.yml`.
+4. **Enable publishing** by deleting the `if: false` line from the `build` job
+   in `.github/workflows/python-publish.yml`. The `publish-test` and `publish`
+   jobs are chained to it through `needs`, so that one line gates all three.
 
 No API tokens, and nothing to store in repository secrets. GitHub mints a
 short-lived OIDC token per run and PyPI exchanges it for a scoped credential.
