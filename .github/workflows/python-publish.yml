@@ -51,6 +51,11 @@ jobs:
   # Built once and handed to both publish jobs, so the artifact uploaded to
   # PyPI is byte-for-byte the one that went to TestPyPI.
   build:
+    # Publishing is off in the template itself, which has nothing to release.
+    # Delete this line to enable it: publish-test and publish are chained to
+    # this job through `needs`, so one line gates all three.
+    if: false
+
     needs: lint-test
     runs-on: ubuntu-latest
     steps:
@@ -79,10 +84,6 @@ jobs:
           if-no-files-found: error
 
   publish-test:
-    # Publishing is off in the template itself, which has nothing to release.
-    # Delete this line in your project once the trusted publisher is registered.
-    if: false
-
     needs: build
     runs-on: ubuntu-latest
     # Binds this job to the trusted publisher registered for `testpypi`.
@@ -93,10 +94,16 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # `--index testpypi` resolves that name from [[tool.uv.index]] in
+      # pyproject.toml, which is not part of the built artifact.
+      - name: Checkout code
+        uses: actions/checkout@v7
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
           python-version: "3.14"
+          enable-cache: true
 
       - name: Download distributions
         uses: actions/download-artifact@v8
@@ -110,10 +117,6 @@ jobs:
         run: uv publish --index testpypi --trusted-publishing always
 
   publish:
-    # Publishing is off in the template itself, which has nothing to release.
-    # Delete this line in your project once the trusted publisher is registered.
-    if: false
-
     needs: publish-test
     runs-on: ubuntu-latest
     # Binds this job to the trusted publisher registered for `pypi`. Add a
@@ -131,6 +134,14 @@ jobs:
         uses: astral-sh/setup-uv@v9.0.0
         with:
           python-version: "3.14"
+          enable-cache: true
+
+      # verify-publish.bash reads VERSION to decide which release to install,
+      # and a fresh checkout still holds the committed placeholder. Run it
+      # before anything else touches the tree: the script refuses a dirty one.
+      - name: Set the correct (tag) version
+        working-directory: .
+        run: scripts/detect-and-set-tag-version.bash
 
       - name: Download distributions
         uses: actions/download-artifact@v8
