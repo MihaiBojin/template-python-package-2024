@@ -76,6 +76,24 @@ docker-run:
 	@echo "Running Docker image..."
 	@scripts/run-docker-image.bash $(ARGS)
 
+.PHONY: helm-lint
+helm-lint:
+	@echo "Linting the Helm chart..."
+	@helm lint charts/*
+	@echo "Rendering the Helm chart..."
+	@helm template release-test charts/* >/dev/null
+	@echo "OK."
+
+.PHONY: helm-set-version
+helm-set-version:
+	@scripts/helm-set-version.bash
+
+.PHONY: helm-package
+helm-package: helm-lint
+	@echo "Packaging the Helm chart..."
+	@rm -rf out/charts
+	@helm package charts/* -d out/charts
+
 .PHONY: publish-test
 publish-test: build
 	@echo "Publishing to test repo..."

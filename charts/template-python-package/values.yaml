@@ -1,0 +1,75 @@
+replicaCount: 1
+
+image:
+  # The docker-publish workflow pushes to ghcr.io/<owner>/<repo>, lowercased
+  repository: ghcr.io/mihaibojin/template-python-package
+  pullPolicy: Always
+  # Defaults to .Chart.AppVersion, which the release sets from the git tag
+  tag: ""
+
+# The bundled demo CLI prints one line and exits, so the default Deployment
+# restarts it forever. That is fine for a template -- it proves the image is
+# wired up -- but a real project overrides these with a long-running command.
+# Leave both empty to use the image's ENTRYPOINT.
+command: []
+args: []
+
+# Non-sensitive configuration, rendered into a ConfigMap and exposed to the
+# container as environment variables.
+config:
+  LOG_LEVEL: "INFO"
+
+# Sensitive configuration, rendered into a Secret and exposed the same way.
+# Pass real values with --set-string or an unversioned values file; never
+# commit them here.
+secrets: {}
+# API_TOKEN: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+# The chart creates its own namespace, named after the chart. Set this to
+# deploy into an existing one instead -- note the Namespace resource is still
+# rendered, so point it at a namespace this release is allowed to own.
+namespaceOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsUser: 30000
+  runAsGroup: 30000
+  fsGroup: 30000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  privileged: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,28 @@
+apiVersion: v2
+name: template-python-package
+description: A Helm chart for the template-python-package demo CLI
+type: application
+
+# Tracked at 0.0.0, exactly like the VERSION file: the real number comes from
+# the git tag at release time, written in by scripts/helm-set-version.bash.
+# Do not bump these by hand.
+version: "0.0.0"
+appVersion: "0.0.0"
+
+maintainers:
+  - name: Mihai Bojin
+    email: mihai.bojin@gmail.com
+
+annotations:
+  category: Application
+  licenses: Apache-2.0
+
+keywords:
+  - python
+  - package
+  - template
+  - starter
+
+home: https://MihaiBojin.github.io/template-python-package/
+sources:
+  - https://github.com/MihaiBojin/template-python-package

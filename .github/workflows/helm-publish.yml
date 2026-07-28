@@ -1,0 +1,81 @@
+name: Publish Helm Chart
+
+on:
+  # Trigger only on v0.* tag pushes
+  push:
+    tags:
+      - "v0.*"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.0.1
+
+      - name: Lint chart
+        run: helm lint charts/*
+
+      - name: Render chart
+        run: helm template release-test charts/*
+
+  publish:
+    # The chart release is disabled until the gh-pages branch exists and Pages
+    # is serving from it -- see "Publishing the Helm chart" in the README.
+    # Delete this line to enable it.
+    if: false
+
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      # chart-releaser pushes the packaged chart and the updated index
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # chart-releaser diffs against the previous chart tag, so it needs
+          # the full history rather than a shallow clone
+          fetch-depth: 0
+
+      - name: Set chart version
+        run: scripts/helm-set-version.bash
+
+      - name: Configure git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      # chart-releaser decides what to publish by diffing *tracked* files under
+      # charts/ against the previous chart tag. Chart.yaml is tracked at 0.0.0
+      # and rewritten above, so without committing that rewrite the diff is
+      # empty and the release is silently skipped. The commit stays local to
+      # this job and is never pushed.
+      - name: Commit the generated chart version
+        run: |
+          git add charts
+          git commit -m "Set chart version for ${GITHUB_REF_NAME}"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.0.1
+
+      - name: Run chart-releaser
+        id: chart_releaser
+        uses: helm/chart-releaser-action@v1.7.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          skip_existing: true
+
+      # chart-releaser exits 0 when it finds nothing to do, so a no-op is
+      # indistinguishable from a success. On a tag build it must publish.
+      - name: Verify the chart was published
+        run: |
+          if [ -z "${{ steps.chart_releaser.outputs.changed_charts }}" ]; then
+            echo "ERROR: chart-releaser published nothing on a tag build" >&2
+            exit 1
+          fi
+          echo "Published ${{ steps.chart_releaser.outputs.changed_charts }} version ${{ steps.chart_releaser.outputs.chart_version }}"
