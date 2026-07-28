@@ -14,6 +14,8 @@
 .venv
 .vscode
 build/
+charts/
 dist/
+out/
 venv/
 # keep-sorted end

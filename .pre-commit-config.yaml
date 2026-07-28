@@ -8,7 +8,11 @@ repos:
       # keep-sorted start
       - id: check-ast
       - id: check-docstring-first
+      # Helm templates are Go templates, not YAML, until helm renders them.
+      # Chart.yaml and values.yaml are still checked; `make helm-lint` covers
+      # the templates.
       - id: check-yaml
+        exclude: ^charts/[^/]+/templates/
       - id: debug-statements
       - id: end-of-file-fixer
       - id: trailing-whitespace

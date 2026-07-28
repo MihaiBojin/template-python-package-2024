@@ -71,6 +71,7 @@ exclude = [
     ".vscode/**",
     "Dockerfile",
     "Makefile",
+    "charts/**",
     "renovate.json",
     "scripts/**",
     "tests/**",

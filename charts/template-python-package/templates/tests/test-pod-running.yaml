@@ -1,0 +1,49 @@
+{{/*
+Runs the application image once and asserts it exits cleanly, which proves the
+image is pullable, the tag resolves and the entrypoint works.
+
+Deliberately not "check that the Deployment's pod is Running": that needs
+kubectl in the test image and RBAC to list pods, neither of which a default
+ServiceAccount has. A test that cannot pass is worse than no test.
+*/}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "template-python-package.fullname" . }}-test-entrypoint"
+  namespace: {{ include "template-python-package.namespace" . }}
+  labels:
+    {{- include "template-python-package.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  securityContext:
+    {{- toYaml .Values.podSecurityContext | nindent 4 }}
+  containers:
+    - name: test-entrypoint
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      {{- with .Values.command }}
+      command:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.args }}
+      args:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      envFrom:
+        {{- if .Values.config }}
+        - configMapRef:
+            name: {{ include "template-python-package.name" . }}
+        {{- end }}
+        {{- if .Values.secrets }}
+        - secretRef:
+            name: {{ include "template-python-package.name" . }}
+        {{- end }}
