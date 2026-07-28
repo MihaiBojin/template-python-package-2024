@@ -59,6 +59,13 @@ build-backend = "hatchling.build"
 # Directories must use the '/**' form. A bare directory name loses to a
 # re-inclusion in .gitignore -- '!.vscode/settings.json' there was enough to
 # pull .vscode into the sdist despite a '.vscode' entry here.
+#
+# .gitignore is deliberately absent from this list: hatchling force-includes
+# every VCS exclusion file into the sdist (builders/sdist.py, in
+# get_default_build_data), and force_include bypasses these patterns. Neither
+# an entry here nor 'ignore-vcs = true' removes it. That is by design -- the
+# sdist must build the same file set the source tree did, and hatchling reads
+# .gitignore to decide that set.
 exclude = [
     # keep-sorted start
     ".devcontainer/**",
