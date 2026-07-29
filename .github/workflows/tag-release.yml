@@ -1,0 +1,80 @@
+name: Tag Release
+
+# Releasing is merging a version bump. This reads `version` from pyproject.toml
+# on every push to main and tags the commit when no such tag exists yet, so a
+# push that does not change the version is a no-op.
+#
+# See README, "Publishing a version", for the flow this drives.
+
+on:
+  # Every push to main, but only a version bump results in a tag
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    # Tagging is off in the template itself, which has nothing to release: its
+    # version is the 0.0.0 placeholder, so the first push to main would tag
+    # v0.0.0. Delete this line once the project has a name and a real version.
+    if: false
+
+    runs-on: ubuntu-latest
+    permissions:
+      # Push the tag
+      contents: write
+      # Dispatch the publish workflows
+      actions: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Tag the release
+        id: tag
+        run: |
+          # Assigned on its own line on purpose. `echo "tag=$(...)"` would
+          # discard the script's exit status -- errexit only inspects `echo`,
+          # which always succeeds -- so a rejected tag push would write an
+          # empty output, skip the dispatch, and report "nothing to release"
+          # on a green run. A plain assignment does propagate the failure.
+          TAG="$(scripts/tag-release.bash)"
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+
+      # A tag pushed with GITHUB_TOKEN does not trigger `on: push: tags` --
+      # GitHub suppresses those events to prevent workflows recursing. Of the
+      # events that are exempt, workflow_dispatch is the one that fits, so the
+      # pipeline is started explicitly against the new tag. This avoids keeping
+      # a long-lived PAT solely to make a tag push observable.
+      - name: Publish the tagged release
+        if: steps.tag.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          echo "Dispatching cicd.yml against $TAG..."
+          gh workflow run cicd.yml --ref "$TAG"
+
+      - name: Report
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if [ -n "$TAG" ]; then
+            echo "Released $TAG" >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "No version change; nothing to release." >>"$GITHUB_STEP_SUMMARY"
+          fi

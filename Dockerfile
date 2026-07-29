@@ -20,11 +20,14 @@ WORKDIR /app
 
 # Resolve dependencies first, without the project itself, so editing source
 # does not invalidate this layer.
+#
+# Bind only what uv needs to resolve dependencies. '--no-install-project' never
+# calls the build backend, so files that only the backend reads -- README.md for
+# the readme metadata, for one -- are not needed here. The stage below builds the
+# project and gets the whole tree from COPY.
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=README.md,target=README.md \
-    --mount=type=bind,source=VERSION,target=VERSION \
     uv sync --frozen --no-dev --no-editable --extra cli --no-install-project
 
 COPY . /app
