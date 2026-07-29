@@ -293,7 +293,9 @@ Three flags on those calls are load-bearing:
   fails with `ENOENT` if it is missing.
 
 `--skip-existing` keeps re-runs idempotent, which also means a failed upload
-exits 0 — hence the final step asserting the release actually exists.
+exits 0 — and an index that was never pushed does not show up in the release
+either. The final step therefore asserts both: the release exists, and the
+chart resolves from the published `gh-pages` index.
 
 One consequence worth knowing: `cr` tags each chart release
 `<chart>-<version>` on the **same commit** as `v<version>`, so from the first

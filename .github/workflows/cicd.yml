@@ -437,6 +437,8 @@ jobs:
           OWNER="${GITHUB_REPOSITORY%%/*}"
           REPO="${GITHUB_REPOSITORY##*/}"
 
+          mkdir -p .cr-release-packages
+
           # charts/* rather than a hard-coded name, like the rest of the repo:
           # renaming the chart does not mean editing this workflow too.
           cr package charts/* --package-path .cr-release-packages
@@ -461,7 +463,7 @@ jobs:
           # fails with ENOENT -- so `cr index` cannot succeed unless the
           # directory already exists. Stated explicitly rather than left to
           # the default, so the mkdir and the path cannot drift apart.
-          mkdir -p .cr-index
+          rm -rf .cr-index && mkdir -p .cr-index
 
           cr index \
             --owner "$OWNER" \
@@ -471,7 +473,8 @@ jobs:
             --package-path .cr-release-packages
 
       # '--skip-existing' makes re-runs idempotent, which also means a chart
-      # that failed to publish exits 0. On a tag build it must be there.
+      # that failed to publish exits 0, and an index that was never pushed is
+      # invisible from the release alone. Check both.
       #
       # The release name is taken from the packaged archive rather than parsed
       # out of Chart.yaml: cr names both from the same chart metadata, so the
@@ -482,8 +485,17 @@ jobs:
         run: |
           PACKAGE="$(echo .cr-release-packages/*.tgz)"
           RELEASE="$(basename "$PACKAGE" .tgz)"
+
           if ! gh release view "$RELEASE" --json tagName >/dev/null 2>&1; then
             echo "ERROR: chart release '$RELEASE' was not published" >&2
             exit 1
           fi
-          echo "Published chart release '$RELEASE'" >&2
+
+          # cr pushes the index from its own worktree, so the local ref is stale
+          git fetch -q origin gh-pages
+          if ! git show "origin/gh-pages:index.yaml" | grep -q "$(basename "$PACKAGE")"; then
+            echo "ERROR: '$RELEASE' is missing from the gh-pages index" >&2
+            exit 1
+          fi
+
+          echo "Published '$RELEASE' and indexed it on gh-pages" >&2
