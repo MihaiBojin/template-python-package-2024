@@ -55,14 +55,15 @@ build:
 
 .PHONY: build-inspect
 build-inspect: PROJECT_NAME = $(shell scripts/project-name.bash)
+build-inspect: PROJECT_VERSION = $(shell scripts/project-version.bash)
 build-inspect:
 	@echo
 	@echo "Inspecting wheel..."
-	@uv run wheel2json dist/$(PROJECT_NAME)-$(shell cat VERSION)-py3-none-any.whl
+	@uv run wheel2json dist/$(PROJECT_NAME)-$(PROJECT_VERSION)-py3-none-any.whl
 
 	@echo
 	@echo "Inspecting archive..."
-	@tar -tf dist/$(PROJECT_NAME)-$(shell cat VERSION).tar.gz
+	@tar -tf dist/$(PROJECT_NAME)-$(PROJECT_VERSION).tar.gz
 
 .PHONY: docker
 docker:

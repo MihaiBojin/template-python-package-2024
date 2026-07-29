@@ -303,6 +303,7 @@ wheels = [
 
 [[package]]
 name = "template-python-package"
+version = "0.0.0"
 source = { editable = "." }
 
 [package.optional-dependencies]

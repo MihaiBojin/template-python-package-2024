@@ -5,5 +5,6 @@
     "github>MihaiBojin/renovate:group-github-actions",
     "github>MihaiBojin/renovate:group-python-tooling",
     "github>MihaiBojin/renovate:pre-commit"
-  ]
+  ],
+  "constraintsFiltering": "strict"
 }

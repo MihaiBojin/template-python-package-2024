@@ -15,10 +15,10 @@ The chart creates its own namespace, named after the chart. Set
 
 ## Versioning
 
-`version` and `appVersion` are tracked at `0.0.0`, the same placeholder
-convention the `VERSION` file uses. The real number is written in at release
-time by `scripts/helm-set-version.bash`, from the git tag, with the leading
-`v` stripped. Do not bump them by hand.
+`version` and `appVersion` are tracked at `0.0.0` as placeholders. The real
+number is written in at release time by `scripts/helm-set-version.bash`, from
+the git tag, with the leading `v` stripped. Do not bump them by hand — bump
+`version` in `pyproject.toml`, which is what the release tag is derived from.
 
 ## Values
 

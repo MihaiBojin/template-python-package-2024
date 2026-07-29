@@ -3,9 +3,9 @@ name: template-python-package
 description: A Helm chart for the template-python-package demo CLI
 type: application
 
-# Tracked at 0.0.0, exactly like the VERSION file: the real number comes from
-# the git tag at release time, written in by scripts/helm-set-version.bash.
-# Do not bump these by hand.
+# Tracked at 0.0.0 as a placeholder: the real number comes from the git tag at
+# release time, written in by scripts/helm-set-version.bash. Do not bump these
+# by hand -- bump 'version' in pyproject.toml, which the tag is derived from.
 version: "0.0.0"
 appVersion: "0.0.0"
 

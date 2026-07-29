@@ -4,18 +4,33 @@ set -ueo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly DIR
 
-VERSION="$(cat "$DIR"/../VERSION)"
+# Load name and version from the project manifest. Read inline rather than
+# through functions.bash: this script is the one thing under scripts/ that ships
+# in the sdist (see the re-include in pyproject.toml), so it has to run from an
+# unpacked archive where the other helpers are absent.
+VERSION="$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('$DIR/../pyproject.toml','rb'))['project']['version'])")"
 readonly VERSION
 
-# Load project name from project manifest
 PROJECT_NAME="$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('$DIR/../pyproject.toml','rb'))['project']['name'])")"
 readonly PROJECT_NAME
 
-# Retries a command up to 3 times
+# Retries a command, backing off exponentially.
+#
+# This exists for one reason: a freshly uploaded release takes time to appear on
+# the index that just accepted it. A budget of three retries 5s apart gave up
+# after ~30s and failed releases that had in fact published correctly, so the
+# delays now grow to cover several minutes.
+#
+# Callers must also pass --refresh-package. uv caches index responses, negative
+# answers included, so a bare retry re-reads the cached "no such version" in
+# about 2ms and the whole ladder expires without ever asking the index again;
+# pip re-fetched on its own, which is why this only began to matter once the
+# toolchain moved to uv.
 retry() {
-    MAX_ATTEMPTS=4
+    # One attempt plus five retries: 15s, 30s, 60s, 120s, 240s (~7.75 min).
+    MAX_ATTEMPTS=6
     count=0
-    base=5
+    base=15
     local command="$*"
     while [ "$count" -lt "$MAX_ATTEMPTS" ]; do
         count=$((count + 1))
@@ -29,8 +44,8 @@ retry() {
         fi
 
         echo
-        echo "Retring ($count/$((MAX_ATTEMPTS - 1)))..."
-        delay=$((base * count))
+        echo "Retrying ($count/$((MAX_ATTEMPTS - 1)))..."
+        delay=$((base * 2 ** (count - 1)))
         echo "Sleeping for $delay seconds before retrying..."
         sleep "$delay"
     done
@@ -67,11 +82,11 @@ while [[ "$#" -gt 0 ]]; do
             uv pip install $CLI_DEPS
         fi
         echo "Attempting install: ${PROJECT_NAME}==$VERSION"
-        retry uv pip install --index-url https://test.pypi.org/simple/ "${PROJECT_NAME}==$VERSION"
+        retry uv pip install --refresh-package "$PROJECT_NAME" --index-url https://test.pypi.org/simple/ "${PROJECT_NAME}==$VERSION"
         ;;
     --prod)
         echo "Attempting install: ${PROJECT_NAME}==$VERSION"
-        retry uv pip install "${PROJECT_NAME}[cli]==$VERSION"
+        retry uv pip install --refresh-package "$PROJECT_NAME" "${PROJECT_NAME}[cli]==$VERSION"
         ;;
     --*= | -*)
         echo "Error: Unsupported flag $1" >&2

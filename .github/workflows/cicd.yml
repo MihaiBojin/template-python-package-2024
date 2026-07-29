@@ -1,0 +1,501 @@
+name: CI/CD
+
+# One pipeline, one job graph:
+#
+#   lint-test ──> build ──> publish-test ──> publish ──┬─> push-dockerhub ─┐
+#   helm-lint                                          └─> push-ghcr ──────┴─> release ──> helm
+#
+# Everything from `build` down runs only on a v0.* tag. PyPI gates the image
+# builds deliberately: a PyPI upload cannot be undone or replaced, so if it
+# fails there is nothing to pin images against and the run stops there.
+#
+# Publishing uses PyPI Trusted Publishing (OIDC), so no API token is stored
+# anywhere. PyPI matches the request against the repository, this workflow's
+# FILENAME, and the environment. Renaming this file breaks publishing with a
+# confusing error — re-register the publisher on PyPI if you ever move it.
+#
+# See README, "Publishing to PyPI", for the one-time setup.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    tags:
+      - "v0.*"
+  # How tag-release.yml starts this workflow: a tag it pushes with GITHUB_TOKEN
+  # does not raise a push event, but workflow_dispatch is exempt from that rule.
+  # Run it against a tag ref, not a branch.
+  workflow_dispatch:
+
+# Least privilege by default: the jobs that only read the repo inherit this, and
+# the ones that publish widen it for themselves. Without a default,
+# GITHUB_TOKEN's scopes come from the repository setting, which is invisible
+# from here and applies to every job equally.
+# see: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+permissions:
+  contents: read
+
+jobs:
+  lint-test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install dependencies
+        # --locked fails the build on a stale uv.lock, rather than quietly
+        # resolving something the lock file never described
+        run: uv sync --all-extras --locked
+
+      - name: Run linters
+        run: uv run pre-commit run --all-files
+
+      - name: Run tests
+        run: uv run pytest tests
+
+  helm-lint:
+    name: Lint Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.0.1
+
+      - name: Lint chart
+        run: helm lint charts/*
+
+      - name: Render chart
+        run: helm template release-test charts/*
+
+  # Built once and handed to every job below, so what reaches PyPI is
+  # byte-for-byte what was tested and what TestPyPI accepted.
+  build:
+    name: Build Python package
+    runs-on: ubuntu-latest
+    needs: lint-test
+
+    # `false &&` keeps publishing off in the template, which has nothing to
+    # release. Delete those two words to enable the release chain — every job
+    # below reaches this one through `needs`, so they are all gated here.
+    if: false && startsWith(github.ref, 'refs/tags/v0.')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # A tag-ref checkout fetches only the tag it is checking out.
+          # check-tag-version.bash asks for every tag at HEAD, so that one
+          # would do here — but the chart release adds a second tag to release
+          # commits, and reasoning about which scripts need to see it is worse
+          # than just fetching them all.
+          fetch-tags: true
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Check the tag matches the project version
+        run: scripts/check-tag-version.bash
+
+      - name: Build
+        run: uv build
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-test:
+    name: Publish package to TestPyPI
+    runs-on: ubuntu-latest
+    needs: build
+    # Binds this job to the trusted publisher registered for `testpypi`.
+    environment: testpypi
+    permissions:
+      # Required: lets the job mint the OIDC token PyPI exchanges for a
+      # short-lived, scoped credential. Without it uv has nothing to present.
+      id-token: write
+      contents: read
+    steps:
+      # `--index testpypi` resolves that name from [[tool.uv.index]] in
+      # pyproject.toml, which is not part of the built artifact.
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish package to test repository
+        # `always` rather than the default `automatic`: fail loudly if OIDC is
+        # unavailable instead of silently falling back to looking for a token.
+        run: uv publish --index testpypi --trusted-publishing always
+
+  publish:
+    name: Publish package to PyPI
+    runs-on: ubuntu-latest
+    needs: publish-test
+    # Binds this job to the trusted publisher registered for `pypi`. Add a
+    # required reviewer on this environment if you want a manual gate before
+    # anything reaches the real index.
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish package
+        run: uv publish --trusted-publishing always
+
+      - name: Waiting 30 seconds for the PyPI indexes to be updated
+        run: sleep 30
+
+      - name: Verify package install from PyPI
+        run: scripts/verify-publish.bash --prod
+
+  push-dockerhub:
+    name: Build and push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: publish
+
+    # Opt-in: set the DOCKERHUB_USERNAME repository *variable* (and a
+    # DOCKERHUB_TOKEN secret) to turn this on. Left unset, the job is skipped
+    # and the pipeline continues to GHCR — see the `if` on `release`.
+    if: vars.DOCKERHUB_USERNAME != ''
+
+    permissions:
+      # attest-build-provenance signs with the workflow's OIDC identity and
+      # records the attestation against the repository
+      id-token: write
+      attestations: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # The image builds its own dependencies from uv.lock; uv is needed here
+      # only so image-metadata.bash can read pyproject.toml.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Generate build tags
+        run: scripts/image-metadata.bash >>"$GITHUB_ENV"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build multiplatform image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/arm64,linux/amd64
+          push: true
+          labels: |
+            org.opencontainers.image.title=${{ env.REPO_NAME }}
+            org.opencontainers.image.description=${{ env.DESCRIPTION }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=Apache-2.0
+          tags: |
+            docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
+            docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}:${{ env.VERSION }}
+            docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}:latest
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      # Uploaded as a run artifact; the release job attaches it to the release.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME }}:${{ env.VERSION }}
+          artifact-name: sbom_docker_${{ env.REPO_NAME }}_${{ env.VERSION }}.spdx.json
+
+  push-ghcr:
+    name: Build and push to GitHub Container Registry
+    runs-on: ubuntu-latest
+    needs: publish
+
+    permissions:
+      # Push the image to GHCR
+      packages: write
+      id-token: write
+      attestations: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # The image builds its own dependencies from uv.lock; uv is needed here
+      # only so image-metadata.bash can read pyproject.toml.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          python-version: "3.14"
+          enable-cache: true
+
+      - name: Generate build tags
+        run: scripts/image-metadata.bash >>"$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: true
+
+      - name: Build multiplatform image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/arm64,linux/amd64
+          push: true
+          labels: |
+            org.opencontainers.image.title=${{ env.REPO_NAME }}
+            org.opencontainers.image.description=${{ env.DESCRIPTION }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=Apache-2.0
+          tags: |
+            ghcr.io/${{ env.OWNER_REPO }}:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_REPO }}:${{ env.VERSION }}
+            ghcr.io/${{ env.OWNER_REPO }}:latest
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/${{ env.OWNER_REPO }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ env.OWNER_REPO }}:${{ env.VERSION }}
+          artifact-name: sbom_ghcr_${{ env.REPO_NAME }}_${{ env.VERSION }}.spdx.json
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs:
+      - publish
+      - push-dockerhub
+      - push-ghcr
+
+    # push-dockerhub is skipped when DOCKERHUB_USERNAME is unset, and a skipped
+    # dependency would skip this job too. Naming a status function opts out of
+    # that default, so the real requirement is stated instead: the package
+    # published, and nothing on the way here failed.
+    if: ${{ !cancelled() && !failure() && needs.publish.result == 'success' }}
+
+    # action-gh-release creates the release, and publish-sbom reads the SBOMs
+    # uploaded as artifacts by the image jobs and attaches them to it. The
+    # workflow default of contents:read is not enough for either.
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          make_latest: true
+
+      - uses: anchore/sbom-action/publish-sbom@v0
+        with:
+          sbom-artifact-match: ".*\\.spdx\\.json$"
+
+  helm:
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
+    needs:
+      - helm-lint
+      - release
+
+    # The chart release is disabled until the gh-pages branch exists and Pages
+    # is serving from it -- see "Publishing the Helm chart" in the README.
+    # Delete this line to enable it.
+    if: false
+
+    permissions:
+      # chart-releaser pushes the packaged chart and the updated index
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # `cr index --push` adds a worktree for the gh-pages branch, which a
+          # shallow single-branch clone does not carry
+          fetch-depth: 0
+          # helm-set-version.bash reads the release tag at HEAD, and a tag-ref
+          # checkout brings down only the tag it checked out
+          fetch-tags: true
+
+      - name: Set chart version
+        run: scripts/helm-set-version.bash
+
+      - name: Configure git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5.0.1
+
+      # Install cr only, and drive it by hand below.
+      #
+      # The action's own release step runs `cr upload -c "$(git rev-parse
+      # HEAD)"`. Chart.yaml is tracked at 0.0.0 and rewritten above, and the
+      # action publishes nothing unless that rewrite is a committed change to a
+      # tracked file under charts/ -- but such a commit exists only on the
+      # runner, and GitHub refuses a release whose target_commitish it has
+      # never seen (422). Packaging and uploading directly needs no commit at
+      # all, and aims the release at $GITHUB_SHA, which is on the remote.
+      - name: Install chart-releaser
+        uses: helm/chart-releaser-action@v1.7.0
+        with:
+          install_only: true
+
+      - name: Package and publish the chart
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          REPO="${GITHUB_REPOSITORY##*/}"
+
+          mkdir -p .cr-release-packages
+
+          # charts/* rather than a hard-coded name, like the rest of the repo:
+          # renaming the chart does not mean editing this workflow too.
+          cr package charts/* --package-path .cr-release-packages
+
+          # '--commit "$GITHUB_SHA"' is the fix: on a tag build that is the
+          # tagged commit, which GitHub can resolve.
+          #
+          # '--make-release-latest=false' because cr defaults it to true, and
+          # the `release` job just marked the product release as latest. Left
+          # alone, the chart release quietly takes that badge for itself.
+          cr upload \
+            --owner "$OWNER" \
+            --git-repo "$REPO" \
+            --commit "$GITHUB_SHA" \
+            --make-release-latest=false \
+            --skip-existing \
+            --package-path .cr-release-packages
+
+          # cr writes the merged index to --index-path, which defaults to
+          # .cr-index/index.yaml. Nothing in cr or in helm's atomic write
+          # creates that directory, and the temp file it writes first then
+          # fails with ENOENT -- so `cr index` cannot succeed unless the
+          # directory already exists. Stated explicitly rather than left to
+          # the default, so the mkdir and the path cannot drift apart.
+          rm -rf .cr-index && mkdir -p .cr-index
+
+          cr index \
+            --owner "$OWNER" \
+            --git-repo "$REPO" \
+            --push \
+            --index-path .cr-index/index.yaml \
+            --package-path .cr-release-packages
+
+      # '--skip-existing' makes re-runs idempotent, which also means a chart
+      # that failed to publish exits 0, and an index that was never pushed is
+      # invisible from the release alone. Check both.
+      #
+      # The release name is taken from the packaged archive rather than parsed
+      # out of Chart.yaml: cr names both from the same chart metadata, so the
+      # filename is what it uploaded, quoting and all.
+      - name: Verify the chart was published
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PACKAGE="$(echo .cr-release-packages/*.tgz)"
+          RELEASE="$(basename "$PACKAGE" .tgz)"
+
+          if ! gh release view "$RELEASE" --json tagName >/dev/null 2>&1; then
+            echo "ERROR: chart release '$RELEASE' was not published" >&2
+            exit 1
+          fi
+
+          # cr pushes the index from its own worktree, so the local ref is stale
+          git fetch -q origin gh-pages
+          if ! git show "origin/gh-pages:index.yaml" | grep -q "$(basename "$PACKAGE")"; then
+            echo "ERROR: '$RELEASE' is missing from the gh-pages index" >&2
+            exit 1
+          fi
+
+          echo "Published '$RELEASE' and indexed it on gh-pages" >&2

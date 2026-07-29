@@ -7,7 +7,9 @@ readme = { "file" = "README.md", "content-type" = "text/markdown" }
 authors = [
     { name = "Mihai Bojin", email = "557584+MihaiBojin@users.noreply.github.com" },
 ]
-dynamic = ["version"]
+# Static, and the single source of truth for the version. Bump it in a pull
+# request and run `uv lock`; the release tag only has to agree with it.
+version = "0.0.0"
 dependencies = []
 requires-python = ">=3.11"
 classifiers = [
@@ -92,10 +94,6 @@ exclude = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/template_package", "src/template_cli_package"]
-
-[tool.hatch.version]
-path = "./VERSION"
-pattern = "(?P<version>.+)"
 
 [tool.mypy]
 # keep-sorted start
